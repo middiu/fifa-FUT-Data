@@ -12,7 +12,9 @@ This script version reads and exports extra info from Futhead's website like:
 ## What is the purpose of this script?
 - The purpose of this repository is to have a script that automatically pulls down all players data from Futhead's website for all FIFA versions starting with FIFA 10.
 ## How to use it?
-- Just run the fifa.py script:
+- Modify the database connection string from fifa.py script (line 14)
+`connection = pymysql.connect(user='root', password='blabla', host='127.0.0.1', db='FUTHEAD', cursorclass=pymysql.cursors.DictCursor, charset='UTF8')`
+- Run fifa.py script:
 `python fifa.py`
 ## Players data ouput format:
 - After running the script the user will have the data saved in a MySQL database and CSV files.

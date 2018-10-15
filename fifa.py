@@ -40,7 +40,7 @@ for key, value in fifa.items():
 
     # Truncating table before inserting data into the table
     cursor.execute('TRUNCATE TABLE FUTHEAD.{};'.format(value))
-    #cursor.execute('TRUNCATE TABLE FUTHEAD.NATIONS;')
+    cursor.execute('TRUNCATE TABLE FUTHEAD.NATIONS;')
 
     # Looping through all nation pages
     nations = []
@@ -133,10 +133,14 @@ for key, value in fifa.items():
                 EStats = ExtraPlayerStats.findAll('span', {'class':'player-stat'})
                 for j in range(len(EStats)):                 
                     stat = EStats[j]
+
                     if stat.find('span', {'class': 'value'}) is None:
-                        pass
+                        es.append('')
                     else:
-                        es.append(stat.find('span', {'class': 'value'}).get_text())
+                        if stat.find('span', {'class': 'value'}).get_text() == 'None':
+                            es.append('0')
+                        else:
+                            es.append(stat.find('span', {'class': 'value'}).get_text())
                 extraattributes.append(es)
 
             # Parsing all players stats
