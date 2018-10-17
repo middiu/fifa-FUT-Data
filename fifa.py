@@ -11,7 +11,7 @@ start = time.clock()
 print(start)
 
 # Connect to the database
-connection = pymysql.connect(user='root', password='blablabla', host='127.0.0.1', db='FUTHEAD', cursorclass=pymysql.cursors.DictCursor, charset='UTF8')
+connection = pymysql.connect(user='epetrang', password='Emilio123!', host='127.0.0.1', db='FUTHEAD', cursorclass=pymysql.cursors.DictCursor, charset='UTF8')
 cursor = connection.cursor()
 
 tiers = [
@@ -92,30 +92,31 @@ for key, value in fifa.items():
         print('Number of pages to be parsed for FIFA ' + key + ' ' + tier + ' level players: ' + str(TotalPages))
         for page in range(1, TotalPages + 1):
             FutHead = requests.get('http://www.futhead.com/' + key + '/players/?page=' + str(page) + '&level=' + tier + '&bin_platform=ps')
+            #FutHead = requests.get('https://www.futhead.com/19/players/?name=insigne&bin_platform=pc')
+            
             bs = BeautifulSoup(FutHead.text, 'html.parser')
-            Stats = bs.findAll('span', {'class': 'player-stat stream-col-60 hidden-md hidden-sm'})
-            ExtraStats = bs.findAll('span', {'class': 'player-right slide hidden-sm hidden-xs'})
-            Names = bs.findAll('span', {'class': 'player-name'})
-            Nations =  bs.findAll('img', {'class': 'player-nation'})
-            Information = bs.findAll('span', {'class': 'player-club-league-name'})
-            Ratings = bs.findAll('span', {'class': re.compile('revision-gradient shadowed font-12')})
-            num = len(bs.findAll('li', {'class': 'list-group-item list-group-table-row player-group-item dark-hover'}))
+            Players = bs.findAll('li', {'class': 'list-group-item list-group-table-row player-group-item dark-hover'})
+            num = len(Players)
 
             # Parsing all players information
             for i in range(num):
                 p = []
-                p.append(Names[i].get_text())
-                strong = Information[i].strong.extract()
+                Name = Players[i].find('span', {'class': 'player-name'})
+                Information = Players[i].find('span', {'class': 'player-club-league-name'})
+                p.append(Name.get_text())
+                strong = Information.strong.extract()
                 try:
-                    p.append(re.sub('\s +', '', str(Information[i].get_text())).split('| ')[1])
+                    p.append(re.sub('\s +', '', str(Information.get_text())).split('| ')[1])
                 except IndexError:
                     p.append('')
                 try:
-                    p.append(re.sub('\s +', '', str(Information[i].get_text())).split('| ')[2])
+                    p.append(re.sub('\s +', '', str(Information.get_text())).split('| ')[2])
                 except IndexError:
                     p.append('')
                 #getting Flag id
-                curflag = Nations[i].get("data-src")
+                Nation =  Players[i].find('img', {'class': 'player-nation'})
+
+                curflag = Nation.get("data-src")
                 natid = re.findall(flagidreg, curflag)[0]
                 cursor.execute("SELECT NAME FROM futhead.nations where CODE = {};".format(int(natid)))
                 nations = cursor.fetchall()
@@ -125,11 +126,12 @@ for key, value in fifa.items():
                     p.append('')
                 p.append(strong.get_text())
                 p.append(tier.capitalize())
-                p.append(Ratings[i].get_text())
+                Rating = Players[i].find('span', {'class': re.compile('revision-gradient shadowed font-12')})
+                p.append(Rating.get_text())
                 players.append(p)
 
                 es = []
-                ExtraPlayerStats = ExtraStats[i]
+                ExtraPlayerStats = Players[i].find('span', {'class': 'player-right slide hidden-sm hidden-xs'})
                 EStats = ExtraPlayerStats.findAll('span', {'class':'player-stat'})
                 for j in range(len(EStats)):                 
                     stat = EStats[j]
@@ -142,18 +144,16 @@ for key, value in fifa.items():
                         else:
                             es.append(stat.find('span', {'class': 'value'}).get_text())
                 extraattributes.append(es)
+                Stats = Players[i].findAll('span', {'class': 'player-stat stream-col-60 hidden-md hidden-sm'})
 
-            # Parsing all players stats
-            temp = []
-            for stat in Stats:
-                if Stats.index(stat) % 6 == 0:
-                    if len(temp) > 0:
-                        attributes.append(temp)
-                    temp = []
-                if stat.find('span', {'class': 'value'}) is None:
-                    pass
-                else:
-                    temp.append(stat.find('span', {'class': 'value'}).get_text())
+                # Parsing all players stats
+                temp = []
+                for stat in Stats:
+                    if stat.find('span', {'class': 'value'}) is None:
+                        temp.append('0')
+                    else:
+                        temp.append(stat.find('span', {'class': 'value'}).get_text())
+                attributes.append(temp)
             print('Page ' + str(page) + ' is done!')
 
     # Inserting data into its specific table
